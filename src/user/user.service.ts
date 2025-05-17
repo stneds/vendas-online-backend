@@ -27,15 +27,37 @@ export class UserService {
     return this.users;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+ findOne(id: number) {
+  const user = this.users.find(u => u.id === id);
+  if (!user) {
+    return `Usuário com id #${id} não encontrado`;
   }
+  return user;
+}
 
   update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  const user = this.users.find(u => u.id === id);
+  if (!user) {
+    return `Usuário com id #${id} não encontrado`;
   }
 
+  if (updateUserDto.email) {
+    user.email = updateUserDto.email;
+  }
+  if (updateUserDto.phone) {
+    user.phone = updateUserDto.phone;
+  }
+
+  return user;
+}
+
   remove(id: number) {
-    return `This action removes a #${id} user`;
+    const userIndex = this.users.findIndex(u => u.id === id);
+    if (userIndex === -1){
+      return `Usuário com id #${id} não encontrado`;
+
+    }
+    this.users.splice(userIndex, 1);
+    return `O usuário #${id} foi removido com sucesso`;
   }
 }
