@@ -1,63 +1,61 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { UserEntity } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [];
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+  ) {}
+  
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<UserEntity> {
     const saltOrRounds = 10;
     const passwordHashed = await bcrypt.hash(createUserDto.password, saltOrRounds);
 
-    const user: User = {
+    return this.userRepository.save({
       ...createUserDto,
-      id: this.users.length + 1,
       password: passwordHashed,
-    };
-
-    this.users.push(user);
-
-    return user
+    });
   }
 
-   async findAll(): Promise<User[]> {
-    return this.users;
+   async findAll(): Promise<UserEntity[]> {
+    return this.userRepository.find();
   }
 
- findOne(id: number) {
-  const user = this.users.find(u => u.id === id);
+ async findOne(id: number): Promise<UserEntity | string> {
+  const user = await this.userRepository.findOne({ where: { id } });
   if (!user) {
     return `Usuário com id #${id} não encontrado`;
   }
   return user;
 }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-  const user = this.users.find(u => u.id === id);
+ 
+async update(id: number, updateUserDto: UpdateUserDto): Promise<UserEntity | string> {
+  const user = await this.userRepository.findOne({ where: { id } });
   if (!user) {
     return `Usuário com id #${id} não encontrado`;
   }
 
-  if (updateUserDto.email) {
-    user.email = updateUserDto.email;
-  }
-  if (updateUserDto.phone) {
-    user.phone = updateUserDto.phone;
-  }
+  // Atualiza os campos permitidos
+  if (updateUserDto.email) user.email = updateUserDto.email;
+  if (updateUserDto.phone) user.phone = updateUserDto.phone;
 
+  await this.userRepository.save(user);
   return user;
 }
 
-  remove(id: number) {
-    const userIndex = this.users.findIndex(u => u.id === id);
-    if (userIndex === -1){
-      return `Usuário com id #${id} não encontrado`;
-
-    }
-    this.users.splice(userIndex, 1);
-    return `O usuário #${id} foi removido com sucesso`;
+async remove(id: number): Promise<string> {
+  const result = await this.userRepository.delete(id);
+  if (result.affected === 0) {
+    return `Usuário com id #${id} não encontrado`;
   }
+  return `Usuário com id #${id} removido com sucesso`;
+}
 }
