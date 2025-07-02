@@ -15,6 +15,11 @@ export class UserService {
   
 
   async create(createUserDto: CreateUserDto): Promise<UserEntity> {
+    const userExists = await this.userRepository.findOne({where:{ cpf: createUserDto.cpf }});
+    if (userExists) {
+      throw new Error(`Usuário já existe`);
+    }
+
     const saltOrRounds = 10;
     const passwordHashed = await bcrypt.hash(createUserDto.password, saltOrRounds);
 
